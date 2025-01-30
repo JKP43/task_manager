@@ -44,6 +44,9 @@ def main():
         except FileExistsError:
             messagebox.showerror("Error", "Account already exists!")
 
+    from datetime import datetime
+    from tkinter import messagebox, ttk
+
     def show_task_manager(username):
         for widget in root.winfo_children():
             widget.destroy()
@@ -66,13 +69,31 @@ def main():
             user_file_path = get_user_file_path(username)
             with open(user_file_path, "r") as file:
                 tasks = file.readlines()[1:]  # Skip the password line
-            for idx, task in enumerate(tasks):
+
+            task_list = []
+
+            for task in tasks:
                 if task.strip():
-                    task_data = task.split(",")  # Tasks are stored as "Task: ..., Deadline: ..."
+                    task_data = task.split(",")  # Tasks stored as "Task: ..., Deadline: ..."
                     task_name = task_data[0].replace("Task: ", "").strip()
-                    task_deadline = task_data[1].replace("Deadline: ", "").strip() if len(
+                    deadline_str = task_data[1].replace("Deadline: ", "").strip() if len(
                         task_data) > 1 else "No Deadline"
-                    tree.insert("", "end", values=(task_name, task_deadline))
+
+                    # Convert deadline to a sortable format
+                    try:
+                        deadline = datetime.strptime(deadline_str, "%m-%d-%Y")  # Adjust format if needed
+                    except ValueError:
+                        deadline = datetime.min  # Assign min date for "No Deadline" or invalid dates
+
+                    task_list.append((task_name, deadline_str, deadline))
+
+            # Sort tasks by deadline
+            task_list.sort(key=lambda x: x[2])  # Sort using parsed deadline
+
+            # Insert sorted tasks into the treeview
+            for task_name, deadline_str, _ in task_list:
+                tree.insert("", "end", values=(task_name, deadline_str))
+
         except Exception as e:
             messagebox.showerror("Error", f"Failed to load tasks: {str(e)}")
 
